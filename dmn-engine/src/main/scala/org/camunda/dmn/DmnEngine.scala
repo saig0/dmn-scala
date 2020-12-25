@@ -216,6 +216,7 @@ class DmnEngine(configuration: DmnEngine.Configuration =
       case Left(_) => auditLogListeners.foreach(_.onFailure(auditLog))
     }
 
+    // TODO (saig0): think about including the audit log when the evaluation failed
     result.map {
       case ValNull => NilResult(auditLog)
       case value =>

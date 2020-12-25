@@ -13,8 +13,7 @@ class LiteralExpressionTest
   lazy val typeMismatch = parse("/literalexpression/type-mismatch.dmn")
 
   "A literal expression" should "be evaluated as decision" in {
-    eval(greeting, "greeting", Map("name" -> "John")) should be(
-      Result("Hello John"))
+    eval(greeting, "greeting", Map("name" -> "John")) should be("Hello John")
   }
 
   it should "fail when result doesn't match type" in {

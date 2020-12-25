@@ -13,13 +13,13 @@ trait DecisionTest {
     val stream = getClass.getResourceAsStream(file)
     engine.parse(stream) match {
       case Right(dmn)    => dmn
-      case Left(failure) => throw new IllegalArgumentException(failure.message)
+      case Left(failure) => throw new AssertionError(failure.message)
     }
   }
 
   def eval(decision: ParsedDmn, id: String, context: Map[String, Any]): Any =
     engine.eval(decision, id, context) match {
-      case Right(result) => result
+      case Right(result) => result.value
       case Left(failure) => failure
     }
 
