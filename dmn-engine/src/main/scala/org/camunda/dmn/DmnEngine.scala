@@ -27,14 +27,17 @@ object DmnEngine {
 
   sealed trait EvalResult {
     val isNil: Boolean
+    val value: Any
+    val auditLog: AuditLog
   }
 
-  case class Result(value: Any) extends EvalResult {
+  case class Result(value: Any, auditLog: AuditLog) extends EvalResult {
     val isNil = false
   }
 
-  case object NilResult extends EvalResult {
+  case class NilResult(auditLog: AuditLog) extends EvalResult {
     val isNil = true
+    val value = None
   }
 
   case class EvalContext(dmn: ParsedDmn,
@@ -203,21 +206,21 @@ class DmnEngine(configuration: DmnEngine.Configuration =
   private def evalDecision(
       decision: ParsedDecision,
       context: EvalContext): Either[Failure, EvalResult] = {
-    decisionEval
-      .eval(decision, context)
-      .map {
-        case ValNull => NilResult
-        case result  => Result(valueMapper.unpackVal(result))
-      } match { // inform the AuditLogListeners
-      case anyResult =>
-        val log = AuditLog(context.dmn, context.auditLog.toList)
-        auditLogListeners.foreach { l =>
-          if (anyResult.isRight)
-            l.onEval(log)
-          else
-            l.onFailure(log)
-        }
-        anyResult
+
+    val result = decisionEval.eval(decision, context)
+
+    val auditLog = AuditLog(context.dmn, context.auditLog.toList)
+
+    result match {
+      case Right(_) => auditLogListeners.foreach(_.onEval(auditLog))
+      case Left(_) => auditLogListeners.foreach(_.onFailure(auditLog))
+    }
+
+    result.map {
+      case ValNull => NilResult(auditLog)
+      case value =>
+        val unpacked = valueMapper.unpackVal(value)
+        Result(unpacked, auditLog)
     }
   }
 
